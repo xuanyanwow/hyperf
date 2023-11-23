@@ -1,0 +1,5 @@
+{
+  "image": "docker pull hyperf/hyperf:8.1-alpine-v3.16-swoole-v5.0.3",
+  "features": {
+  }
+}
