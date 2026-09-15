@@ -2,6 +2,7 @@
 
 ## Optimized
 
+- Optimized AMQP consumer to log an error and automatically expand `concurrent.limit` when it is less than `qos.prefetch_count`, to avoid `AMQPInvalidFrameException`.
 - [#7779](https://github.com/hyperf/hyperf/pull/7779) Remove useless `$filename` for `Hyperf\Memory\LockManager`.
 - [#7779](https://github.com/hyperf/hyperf/pull/7779) Enhance `validateStartsWith` `validateUppercase` and `validateEndsWith` to be type-safe and defensive.
 - [#7803](https://github.com/hyperf/hyperf/pull/7803) Use explicit variadic params instead of `func_get_args()` in `HasAttributes::isDirty/isClean/wasChanged`.
