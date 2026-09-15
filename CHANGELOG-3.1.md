@@ -1,4 +1,44 @@
-# v3.1.68 - TBD
+# v3.1.72 - TBD
+
+# v3.1.71 - 2026-08-07
+
+## Fixed
+
+- [#7764](https://github.com/hyperf/hyperf/pull/7764) Fixed bug that `Hyperf\Coordinator\Timer::tick()` caps the callback by the default 10s timeout of `Hyperf\Coroutine\wait()`.
+- [#7791](https://github.com/hyperf/hyperf/pull/7791) Fixed bug that `Hyperf\Validation\Concerns\ValidatesAttributes::validateMultipleOf()` cannot support the latest version for `brick/math`.
+
+## Optimized
+
+- [#7791](https://github.com/hyperf/hyperf/pull/7791) Optimized the type of `Content-Type` to `string` from `int` for `Hyperf\Tracer\Adapter\Reporter\HttpClientFactory`.
+
+# v3.1.70 - 2026-06-15
+
+## Optimized
+
+- [#7761](https://github.com/hyperf/hyperf/pull/7761) Optimized `Hyperf\Coordinator\Timer::tick()` to run the callback inside `Hyperf\Coroutine\wait()` so it executes in a properly managed coroutine context.
+- [#7761](https://github.com/hyperf/hyperf/pull/7761) Optimize the `wait()` method to check whether `Hyperf\Coroutine\Waiter` exists in the `Container`.
+
+# v3.1.69 - 2026-05-09
+
+## Fixed
+
+- [#7731](https://github.com/hyperf/hyperf/pull/7731) Fixed bug that the `Macroable` of `Hyperf\HttpServer\Response` cannot work. 
+- [#7734](https://github.com/hyperf/hyperf/pull/7734) Fixed bug that memory leak when using `Redis::pipeline()` for long-lived environment.
+- [#7736](https://github.com/hyperf/hyperf/pull/7736) Fixed bug that `keys` method in `RedisDriver` does not return array when `sMembers` returns a non-array value.
+- [#7737](https://github.com/hyperf/hyperf/pull/7737) Fixed bug that PostgresProcessor cannot process indexes and foreign keys when columns is null.
+- [#7745](https://github.com/hyperf/hyperf/pull/7745) Fixed bug that `getUri()->getHost()` returns server IP instead of domain when using Swoole 6.2.0, due to `server_addr` having higher priority than `header['host']` in `getUriFromGlobals()`.
+
+# v3.1.68 - 2026-04-21
+
+## Fixed
+
+- [#7738](https://github.com/hyperf/hyperf/pull/7738) Fixed bug that `Hyperf\Database\Concerns\BuildsQueries::getOriginalColumnNameForCursorPagination` cannot work.
+- [#7739](https://github.com/hyperf/hyperf/pull/7739) Fixed bug that http server broken by `nacos` service not found.
+- [#7740](https://github.com/hyperf/hyperf/pull/7740) Fixed bug that `Aws\Handler\GuzzleV6\GuzzleHandler` not found.
+
+## Optimized
+
+- [#7741](https://github.com/hyperf/hyperf/pull/7741) Optimized the `Hyperf\Amqp\Message\Message::getTypeString()` method to prevent conflicts between property and getter methods.
 
 # v3.1.67 - 2026-02-24
 

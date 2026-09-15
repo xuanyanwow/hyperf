@@ -47,23 +47,34 @@ use function Hyperf\Support\value;
 
 class Response implements PsrResponseInterface, ResponseInterface
 {
-    use Macroable;
+    use Macroable {
+        Macroable::__call as macroCall;
+        Macroable::__callStatic as macroCallStatic;
+    }
 
     public function __construct(protected ?ResponsePlusInterface $response = null)
     {
     }
 
-    public function __call($method, $parameters)
+    public function __call(string $name, array $arguments): mixed
     {
-        $response = $this->getResponse();
-        if (! method_exists($response, $method)) {
-            throw new BadMethodCallException(sprintf('Call to undefined method %s::%s()', get_class($this), $method));
+        if (static::hasMacro($name)) {
+            return $this->macroCall($name, $arguments);
         }
-        return $response->{$method}(...$parameters);
+
+        $response = $this->getResponse();
+        if (! method_exists($response, $name)) {
+            throw new BadMethodCallException(sprintf('Call to undefined method %s::%s()', get_class($this), $name));
+        }
+        return $response->{$name}(...$arguments);
     }
 
     public static function __callStatic($method, $parameters)
     {
+        if (static::hasMacro($method)) {
+            return static::macroCallStatic($method, $parameters);
+        }
+
         $response = Context::get(PsrResponseInterface::class);
         if (! method_exists($response, $method)) {
             throw new BadMethodCallException(sprintf('Call to undefined static method %s::%s()', self::class, $method));
