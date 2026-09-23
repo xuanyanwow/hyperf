@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Hyperf\RpcMultiplex;
 
-use Hyperf\RpcClient\RpcTimeoutContext;
+use Hyperf\RpcClient\RpcTimeoutResolver;
 use Multiplex\Contract\IdGeneratorInterface;
 use Multiplex\Contract\PackerInterface;
 use Multiplex\Contract\SerializerInterface;
@@ -46,7 +46,7 @@ class Socket extends Client
         }
 
         try {
-            $timeout = RpcTimeoutContext::get() ?? $this->config['recv_timeout'] ?? 10;
+            $timeout = RpcTimeoutResolver::get() ?? $this->config['recv_timeout'] ?? 10;
             $data = $chan->pop($timeout);
             if ($chan->isTimeout()) {
                 throw new RecvTimeoutException(sprintf('Recv channel [%d] pop timeout after %s seconds.', $id, $timeout));

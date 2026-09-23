@@ -84,7 +84,7 @@ class ServiceClient extends AbstractServiceClient
 
     public function setTimeout(float $seconds): static
     {
-        RpcTimeoutContext::validate($seconds);
+        RpcTimeoutResolver::validate($seconds);
         $this->timeout = $seconds;
 
         return $this;
@@ -100,7 +100,7 @@ class ServiceClient extends AbstractServiceClient
             return $this->__request($method, $params);
         }
 
-        return RpcTimeoutContext::runWith(
+        return RpcTimeoutResolver::runWith(
             $timeout,
             fn () => $this->__request($method, $params)
         );

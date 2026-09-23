@@ -16,7 +16,7 @@ use Hyperf\Config\Config;
 use Hyperf\Context\Context;
 use Hyperf\RpcClient\Contract\RpcClientTimeoutInterface;
 use Hyperf\RpcClient\Proxy\AbstractProxyService;
-use Hyperf\RpcClient\RpcTimeoutContext;
+use Hyperf\RpcClient\RpcTimeoutResolver;
 use Hyperf\RpcClient\ServiceClient;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +30,7 @@ class RpcClientTimeoutTest extends TestCase
 {
     protected function tearDown(): void
     {
-        Context::destroy(RpcTimeoutContext::TIMEOUT);
+        Context::destroy(RpcTimeoutResolver::TIMEOUT);
     }
 
     public function testProxySupportsAChainableOneShotTimeout()
@@ -53,28 +53,28 @@ class RpcClientTimeoutTest extends TestCase
     public function testAppliesTheConfiguredMethodTimeoutWhileProcessingAnRpcCall()
     {
         $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertSame(10.0, RpcTimeoutContext::get());
+            $this->assertSame(10.0, RpcTimeoutResolver::get());
 
             return 'response';
         });
 
         $this->assertSame('response', $client->__call('yyyyy', []));
-        $this->assertNull(RpcTimeoutContext::get());
+        $this->assertNull(RpcTimeoutResolver::get());
     }
 
     public function testChainedTimeoutOverridesMethodTimeoutAndIsConsumedOnce()
     {
         $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertSame(30.0, RpcTimeoutContext::get());
+            $this->assertSame(30.0, RpcTimeoutResolver::get());
 
             return 'response';
         });
 
         $this->assertSame('response', $client->setTimeout(30)->__call('yyyyy', []));
-        $this->assertNull(RpcTimeoutContext::get());
+        $this->assertNull(RpcTimeoutResolver::get());
 
         $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertSame(10.0, RpcTimeoutContext::get());
+            $this->assertSame(10.0, RpcTimeoutResolver::get());
 
             return 'response';
         });
@@ -85,7 +85,7 @@ class RpcClientTimeoutTest extends TestCase
     public function testLeavesTheDefaultTimeoutUnchangedForUnconfiguredMethods()
     {
         $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertNull(RpcTimeoutContext::get());
+            $this->assertNull(RpcTimeoutResolver::get());
 
             return 'response';
         });
