@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace HyperfTest\RpcMultiplex\Cases;
 
 use Hyperf\Context\Context;
-use Hyperf\Rpc\RpcTimeoutContext;
+use Hyperf\RpcClient\RpcTimeoutContext;
 use Hyperf\RpcMultiplex\Socket;
 use HyperfTest\RpcMultiplex\Stub\ContainerStub;
 use Multiplex\Exception\RecvTimeoutException;
@@ -28,7 +28,7 @@ class SocketTimeoutTest extends AbstractTestCase
 {
     protected function tearDown(): void
     {
-        Context::destroy(RpcTimeoutContext::ACTIVE_TIMEOUT);
+        Context::destroy(RpcTimeoutContext::TIMEOUT);
         parent::tearDown();
     }
 
@@ -42,7 +42,7 @@ class SocketTimeoutTest extends AbstractTestCase
             }
         };
         $socket->getChannelManager()->get(1, true);
-        RpcTimeoutContext::setActive(0.01);
+        RpcTimeoutContext::set(0.01);
 
         try {
             $socket->recv(1);

@@ -15,7 +15,6 @@ namespace Hyperf\JsonRpc;
 use Hyperf\Engine\Contract\SocketInterface;
 use Hyperf\JsonRpc\Pool\RpcConnection;
 use Hyperf\Rpc\Exception\RecvException;
-use Hyperf\Rpc\RpcTimeoutContext;
 
 trait RecvTrait
 {
@@ -24,7 +23,6 @@ trait RecvTrait
      */
     public function recvAndCheck(mixed $client, float $timeout)
     {
-        $timeout = RpcTimeoutContext::getActive() ?? $timeout;
         $data = $client->recvPacket($timeout);
         if ($data === '') {
             // RpcConnection: When the next time the connection is taken out of the connection pool, it will reconnect to the target service.
