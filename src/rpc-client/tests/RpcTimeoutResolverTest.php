@@ -13,12 +13,14 @@ declare(strict_types=1);
 namespace HyperfTest\RpcClient;
 
 use Hyperf\Config\Config;
+use Hyperf\Context\Context;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\RpcClient\RpcTimeoutResolver;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @internal
@@ -27,6 +29,11 @@ use PHPUnit\Framework\TestCase;
 #[CoversNothing]
 class RpcTimeoutResolverTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Context::destroy(RpcTimeoutResolver::TIMEOUT);
+    }
+
     public function testResolvesTheTimeoutConfiguredForAServiceMethod()
     {
         $resolver = new RpcTimeoutResolver($this->createConfig([
@@ -68,6 +75,45 @@ class RpcTimeoutResolverTest extends TestCase
             [0],
             [-1],
             ['invalid'],
+        ];
+    }
+
+    public function testTimeoutIsScopedAndRestored()
+    {
+        RpcTimeoutResolver::set(5);
+
+        $result = RpcTimeoutResolver::runWith(10, function () {
+            $this->assertSame(10.0, RpcTimeoutResolver::get());
+
+            return 'result';
+        });
+
+        $this->assertSame('result', $result);
+        $this->assertSame(5.0, RpcTimeoutResolver::get());
+    }
+
+    public function testTimeoutIsClearedAfterAnException()
+    {
+        try {
+            RpcTimeoutResolver::runWith(10, static fn () => throw new RuntimeException('failed'));
+        } catch (RuntimeException) {
+        }
+
+        $this->assertNull(RpcTimeoutResolver::get());
+    }
+
+    #[DataProvider('invalidRuntimeTimeoutProvider')]
+    public function testRejectsANonPositiveRuntimeTimeout(float $timeout)
+    {
+        $this->expectException(InvalidArgumentException::class);
+        RpcTimeoutResolver::set($timeout);
+    }
+
+    public static function invalidRuntimeTimeoutProvider(): array
+    {
+        return [
+            [0.0],
+            [-1.0],
         ];
     }
 
