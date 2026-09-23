@@ -16,6 +16,7 @@ use Hyperf\Collection\Arr;
 use Hyperf\Contract\IdGeneratorInterface;
 use Hyperf\Contract\NormalizerInterface;
 use Hyperf\Di\MethodDefinitionCollectorInterface;
+use Hyperf\Rpc\RpcTimeoutContext;
 use Hyperf\RpcClient\Exception\RequestException;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -27,6 +28,8 @@ class ServiceClient extends AbstractServiceClient
     protected string $serviceInterface;
 
     private NormalizerInterface $normalizer;
+
+    private ?RpcTimeoutResolver $timeoutResolver = null;
 
     public function __construct(ContainerInterface $container, string $serviceName, string $protocol = 'jsonrpc-http', array $options = [])
     {
@@ -80,7 +83,22 @@ class ServiceClient extends AbstractServiceClient
 
     public function __call(string $method, array $params)
     {
-        return $this->__request($method, $params);
+        $timeout = RpcTimeoutContext::pullExplicit()
+            ?? $this->getTimeoutResolver()->resolve($this->serviceName, $method);
+
+        if ($timeout === null) {
+            return $this->__request($method, $params);
+        }
+
+        return RpcTimeoutContext::runWithActive(
+            $timeout,
+            fn () => $this->__request($method, $params)
+        );
+    }
+
+    protected function getTimeoutResolver(): RpcTimeoutResolver
+    {
+        return $this->timeoutResolver ??= new RpcTimeoutResolver($this->config);
     }
 
     protected function setOptions(array $options): void

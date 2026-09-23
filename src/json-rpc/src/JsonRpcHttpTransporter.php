@@ -18,6 +18,7 @@ use Hyperf\Guzzle\ClientFactory;
 use Hyperf\LoadBalancer\LoadBalancerInterface;
 use Hyperf\LoadBalancer\Node;
 use Hyperf\Rpc\Contract\TransporterInterface;
+use Hyperf\Rpc\RpcTimeoutContext;
 use RuntimeException;
 
 use function Hyperf\Support\value;
@@ -67,12 +68,15 @@ class JsonRpcHttpTransporter implements TransporterInterface
             return $schema;
         });
         $url = $schema . $uri;
+        $recvTimeout = RpcTimeoutContext::getActive() ?? $this->clientOptions['recv_timeout'];
         $response = $this->getClient()->post($url, [
             RequestOptions::HEADERS => [
                 'Content-Type' => 'application/json',
             ],
             RequestOptions::HTTP_ERRORS => false,
             RequestOptions::BODY => $data,
+            RequestOptions::TIMEOUT => $recvTimeout + $this->clientOptions['connect_timeout'],
+            RequestOptions::CONNECT_TIMEOUT => $this->clientOptions['connect_timeout'],
         ]);
         if ($response->getStatusCode() === 200) {
             return (string) $response->getBody();

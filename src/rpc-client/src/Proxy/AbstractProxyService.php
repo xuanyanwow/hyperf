@@ -12,12 +12,14 @@ declare(strict_types=1);
 
 namespace Hyperf\RpcClient\Proxy;
 
+use Hyperf\Rpc\RpcTimeoutContext;
+use Hyperf\RpcClient\Contract\RpcClientTimeoutInterface;
 use Hyperf\RpcClient\ServiceClient;
 use Psr\Container\ContainerInterface;
 
 use function Hyperf\Support\make;
 
-abstract class AbstractProxyService
+abstract class AbstractProxyService implements RpcClientTimeoutInterface
 {
     protected ServiceClient $client;
 
@@ -29,5 +31,12 @@ abstract class AbstractProxyService
             'protocol' => $protocol,
             'options' => $options,
         ]);
+    }
+
+    public function setTimeout(float $seconds): static
+    {
+        RpcTimeoutContext::setExplicit($seconds);
+
+        return $this;
     }
 }
