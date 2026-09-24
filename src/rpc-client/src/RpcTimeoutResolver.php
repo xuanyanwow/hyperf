@@ -56,12 +56,20 @@ class RpcTimeoutResolver
     }
 
     /**
-     * Set the timeout of the next rpc call, then return the proxy service to keep the call chainable.
+     * Set the timeout of the next rpc call.
      */
-    public function set(float $timeout): ?AbstractProxyService
+    public static function set(float $timeout): void
     {
         self::validate($timeout);
         Context::set(self::TIMEOUT, $timeout);
+    }
+
+    /**
+     * Set the timeout of the next rpc call, then return the proxy service to keep the call chainable.
+     */
+    public function with(float $timeout): ?AbstractProxyService
+    {
+        self::set($timeout);
 
         return $this->proxy;
     }

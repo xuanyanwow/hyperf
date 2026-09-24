@@ -79,9 +79,8 @@ class RpcTimeoutResolverTest extends TestCase
 
     public function testSetWritesTheTimeoutIntoContext()
     {
-        $resolver = new RpcTimeoutResolver($this->createConfig([]));
+        RpcTimeoutResolver::set(10);
 
-        $this->assertNull($resolver->set(10));
         $this->assertSame(10.0, RpcTimeoutResolver::get());
     }
 
@@ -89,7 +88,7 @@ class RpcTimeoutResolverTest extends TestCase
     public function testRejectsANonPositiveRuntimeTimeout(float $timeout)
     {
         $this->expectException(InvalidArgumentException::class);
-        (new RpcTimeoutResolver($this->createConfig([])))->set($timeout);
+        RpcTimeoutResolver::set($timeout);
     }
 
     public static function invalidRuntimeTimeoutProvider(): array

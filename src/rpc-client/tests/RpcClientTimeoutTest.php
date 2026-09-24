@@ -41,7 +41,7 @@ class RpcClientTimeoutTest extends TestCase
             return 'response';
         });
 
-        $this->assertSame('response', $proxy->timeoutResolver->set(30)->yyyyy());
+        $this->assertSame('response', $proxy->timeoutResolver->with(30)->yyyyy());
         $this->assertNull(RpcTimeoutResolver::get());
     }
 
@@ -54,7 +54,7 @@ class RpcClientTimeoutTest extends TestCase
             return 'response';
         });
 
-        $proxy->timeoutResolver->set(30)->yyyyy();
+        $proxy->timeoutResolver->with(30)->yyyyy();
 
         $expected = 10.0;
         $proxy->yyyyy();

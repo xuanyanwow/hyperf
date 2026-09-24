@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace HyperfTest\RpcMultiplex\Cases;
 
-use Hyperf\Config\Config;
 use Hyperf\Context\Context;
 use Hyperf\RpcClient\RpcTimeoutResolver;
 use Hyperf\RpcMultiplex\Socket;
@@ -43,7 +42,7 @@ class SocketTimeoutTest extends AbstractTestCase
             }
         };
         $socket->getChannelManager()->get(1, true);
-        (new RpcTimeoutResolver(new Config([])))->set(0.01);
+        RpcTimeoutResolver::set(0.01);
 
         try {
             $socket->recv(1);

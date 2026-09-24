@@ -88,7 +88,7 @@ class ServiceClient extends AbstractServiceClient
         if (RpcTimeoutResolver::get() === null) {
             $timeout = $resolver->resolve($this->serviceName, $method);
             if ($timeout !== null) {
-                $resolver->set($timeout);
+                RpcTimeoutResolver::set($timeout);
             }
         }
 
