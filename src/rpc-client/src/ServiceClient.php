@@ -28,14 +28,13 @@ class ServiceClient extends AbstractServiceClient
 
     private NormalizerInterface $normalizer;
 
-    private ?RpcTimeoutResolver $timeoutResolver = null;
+    protected ?RpcTimeoutResolver $timeoutResolver = null;
 
-    private ?float $timeout = null;
-
-    public function __construct(ContainerInterface $container, string $serviceName, string $protocol = 'jsonrpc-http', array $options = [])
+    public function __construct(ContainerInterface $container, string $serviceName, string $protocol = 'jsonrpc-http', array $options = [], ?RpcTimeoutResolver $timeoutResolver = null)
     {
         $this->serviceName = $serviceName;
         $this->protocol = $protocol;
+        $this->timeoutResolver = $timeoutResolver;
         $this->setOptions($options);
 
         parent::__construct($container);
@@ -82,19 +81,10 @@ class ServiceClient extends AbstractServiceClient
         throw new RequestException('Invalid response.');
     }
 
-    public function setTimeout(float $seconds): static
-    {
-        RpcTimeoutResolver::validate($seconds);
-        $this->timeout = $seconds;
-
-        return $this;
-    }
-
     public function __call(string $method, array $params)
     {
-        $timeout = $this->timeout;
-        $this->timeout = null;
-        $timeout ??= $this->getTimeoutResolver()->resolve($this->serviceName, $method);
+        $resolver = $this->getTimeoutResolver();
+        $timeout = $resolver->pull() ?? $resolver->resolve($this->serviceName, $method);
 
         if ($timeout === null) {
             return $this->__request($method, $params);

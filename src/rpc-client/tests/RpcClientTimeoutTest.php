@@ -14,7 +14,7 @@ namespace HyperfTest\RpcClient;
 
 use Hyperf\Config\Config;
 use Hyperf\Context\Context;
-use Hyperf\RpcClient\Contract\RpcClientTimeoutInterface;
+use Hyperf\Contract\ConfigInterface;
 use Hyperf\RpcClient\Proxy\AbstractProxyService;
 use Hyperf\RpcClient\RpcTimeoutResolver;
 use Hyperf\RpcClient\ServiceClient;
@@ -33,21 +33,31 @@ class RpcClientTimeoutTest extends TestCase
         Context::destroy(RpcTimeoutResolver::TIMEOUT);
     }
 
-    public function testProxySupportsAChainableOneShotTimeout()
+    public function testProxyExposesAChainableOneShotTimeout()
     {
-        $client = $this->createServiceClient([], function () {
+        $proxy = $this->createProxyService(['yyyyy' => 10], function () {
+            $this->assertSame(30.0, RpcTimeoutResolver::get());
+
             return 'response';
         });
-        $proxy = new class($client) extends AbstractProxyService {
-            public function __construct(ServiceClient $client)
-            {
-                $this->client = $client;
-            }
-        };
 
-        $this->assertInstanceOf(RpcClientTimeoutInterface::class, $proxy);
-        $this->assertSame($proxy, $proxy->setTimeout(30));
-        $this->assertSame('response', $client->__call('foo', []));
+        $this->assertSame('response', $proxy->timeoutResolver->set(30)->yyyyy());
+        $this->assertNull(RpcTimeoutResolver::get());
+    }
+
+    public function testTheOneShotTimeoutIsConsumedByASingleCall()
+    {
+        $expected = 30.0;
+        $proxy = $this->createProxyService(['yyyyy' => 10], function () use (&$expected) {
+            $this->assertSame($expected, RpcTimeoutResolver::get());
+
+            return 'response';
+        });
+
+        $proxy->timeoutResolver->set(30)->yyyyy();
+
+        $expected = 10.0;
+        $proxy->yyyyy();
     }
 
     public function testAppliesTheConfiguredMethodTimeoutWhileProcessingAnRpcCall()
@@ -60,26 +70,6 @@ class RpcClientTimeoutTest extends TestCase
 
         $this->assertSame('response', $client->__call('yyyyy', []));
         $this->assertNull(RpcTimeoutResolver::get());
-    }
-
-    public function testChainedTimeoutOverridesMethodTimeoutAndIsConsumedOnce()
-    {
-        $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertSame(30.0, RpcTimeoutResolver::get());
-
-            return 'response';
-        });
-
-        $this->assertSame('response', $client->setTimeout(30)->__call('yyyyy', []));
-        $this->assertNull(RpcTimeoutResolver::get());
-
-        $client = $this->createServiceClient(['yyyyy' => 10], function () {
-            $this->assertSame(10.0, RpcTimeoutResolver::get());
-
-            return 'response';
-        });
-
-        $this->assertSame('response', $client->__call('yyyyy', []));
     }
 
     public function testLeavesTheDefaultTimeoutUnchangedForUnconfiguredMethods()
@@ -96,20 +86,53 @@ class RpcClientTimeoutTest extends TestCase
     /**
      * @param array<string, float|int> $methodTimeouts
      */
+    private function createProxyService(array $methodTimeouts, callable $handler): AbstractProxyService
+    {
+        return new class($this->createConfig($methodTimeouts), $handler) extends AbstractProxyService {
+            public function __construct(ConfigInterface $config, callable $handler)
+            {
+                $this->timeoutResolver = new RpcTimeoutResolver($config, $this);
+                $this->client = RpcClientTimeoutTest::createClient($config, $handler, $this->timeoutResolver);
+            }
+
+            public function yyyyy(): mixed
+            {
+                return $this->client->__call(__FUNCTION__, []);
+            }
+        };
+    }
+
+    /**
+     * @param array<string, float|int> $methodTimeouts
+     */
     private function createServiceClient(array $methodTimeouts, callable $handler): ServiceClient
     {
-        return new class($methodTimeouts, $handler) extends ServiceClient {
-            public function __construct(array $methodTimeouts, public $handler)
+        return static::createClient($this->createConfig($methodTimeouts), $handler);
+    }
+
+    /**
+     * @param array<string, float|int> $methodTimeouts
+     */
+    private function createConfig(array $methodTimeouts): ConfigInterface
+    {
+        return new Config([
+            'services' => [
+                'consumers' => [[
+                    'name' => 'test-service',
+                    'options' => ['method_timeouts' => $methodTimeouts],
+                ]],
+            ],
+        ]);
+    }
+
+    public static function createClient(ConfigInterface $config, callable $handler, ?RpcTimeoutResolver $timeoutResolver = null): ServiceClient
+    {
+        return new class($config, $handler, $timeoutResolver) extends ServiceClient {
+            public function __construct(ConfigInterface $config, public $handler, ?RpcTimeoutResolver $timeoutResolver)
             {
                 $this->serviceName = 'test-service';
-                $this->config = new Config([
-                    'services' => [
-                        'consumers' => [[
-                            'name' => 'test-service',
-                            'options' => ['method_timeouts' => $methodTimeouts],
-                        ]],
-                    ],
-                ]);
+                $this->config = $config;
+                $this->timeoutResolver = $timeoutResolver;
             }
 
             protected function __request(string $method, array $params, ?string $id = null)

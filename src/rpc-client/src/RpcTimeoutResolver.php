@@ -15,6 +15,7 @@ namespace Hyperf\RpcClient;
 use Closure;
 use Hyperf\Context\Context;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\RpcClient\Proxy\AbstractProxyService;
 use InvalidArgumentException;
 
 class RpcTimeoutResolver
@@ -26,7 +27,9 @@ class RpcTimeoutResolver
      */
     private readonly array $methodTimeouts;
 
-    public function __construct(ConfigInterface $config)
+    private ?float $timeout = null;
+
+    public function __construct(ConfigInterface $config, private readonly ?AbstractProxyService $proxy = null)
     {
         $methodTimeouts = [];
 
@@ -55,15 +58,31 @@ class RpcTimeoutResolver
         $this->methodTimeouts = $methodTimeouts;
     }
 
+    /**
+     * Set the timeout of the next rpc call, then return the proxy service to keep the call chainable.
+     */
+    public function set(float $timeout): ?AbstractProxyService
+    {
+        self::validate($timeout);
+        $this->timeout = $timeout;
+
+        return $this->proxy;
+    }
+
+    /**
+     * Take the timeout set by `set()`, it only affects one rpc call.
+     */
+    public function pull(): ?float
+    {
+        $timeout = $this->timeout;
+        $this->timeout = null;
+
+        return $timeout;
+    }
+
     public function resolve(string $serviceName, string $method): ?float
     {
         return $this->methodTimeouts[$serviceName][$method] ?? null;
-    }
-
-    public static function set(float $timeout): void
-    {
-        self::validate($timeout);
-        Context::set(self::TIMEOUT, $timeout);
     }
 
     public static function get(): ?float

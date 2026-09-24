@@ -37,6 +37,8 @@ class Socket extends Client
 
     public function recv(int $id): mixed
     {
+        // 讓底層包支持單次timeout傳入
+        // parent::recv($id);
         $this->loop();
 
         $manager = $this->getChannelManager();

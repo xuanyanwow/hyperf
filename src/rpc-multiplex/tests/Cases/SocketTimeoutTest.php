@@ -42,10 +42,9 @@ class SocketTimeoutTest extends AbstractTestCase
             }
         };
         $socket->getChannelManager()->get(1, true);
-        RpcTimeoutResolver::set(0.01);
 
         try {
-            $socket->recv(1);
+            RpcTimeoutResolver::runWith(0.01, static fn () => $socket->recv(1));
             $this->fail('Expected RecvTimeoutException was not thrown.');
         } catch (RecvTimeoutException $exception) {
             $this->assertStringContainsString('0.01', $exception->getMessage());

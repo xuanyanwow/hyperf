@@ -80,16 +80,20 @@ class RpcTimeoutResolverTest extends TestCase
 
     public function testTimeoutIsScopedAndRestored()
     {
-        RpcTimeoutResolver::set(5);
+        $result = RpcTimeoutResolver::runWith(5, function () {
+            $result = RpcTimeoutResolver::runWith(10, function () {
+                $this->assertSame(10.0, RpcTimeoutResolver::get());
 
-        $result = RpcTimeoutResolver::runWith(10, function () {
-            $this->assertSame(10.0, RpcTimeoutResolver::get());
+                return 'result';
+            });
 
-            return 'result';
+            $this->assertSame(5.0, RpcTimeoutResolver::get());
+
+            return $result;
         });
 
         $this->assertSame('result', $result);
-        $this->assertSame(5.0, RpcTimeoutResolver::get());
+        $this->assertNull(RpcTimeoutResolver::get());
     }
 
     public function testTimeoutIsClearedAfterAnException()
@@ -106,7 +110,7 @@ class RpcTimeoutResolverTest extends TestCase
     public function testRejectsANonPositiveRuntimeTimeout(float $timeout)
     {
         $this->expectException(InvalidArgumentException::class);
-        RpcTimeoutResolver::set($timeout);
+        (new RpcTimeoutResolver($this->createConfig([])))->set($timeout);
     }
 
     public static function invalidRuntimeTimeoutProvider(): array
