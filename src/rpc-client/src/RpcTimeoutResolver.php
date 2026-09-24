@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace Hyperf\RpcClient;
 
-use Closure;
 use Hyperf\Context\Context;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\RpcClient\Proxy\AbstractProxyService;
@@ -26,8 +25,6 @@ class RpcTimeoutResolver
      * @var array<string, array<string, float>>
      */
     private readonly array $methodTimeouts;
-
-    private ?float $timeout = null;
 
     public function __construct(ConfigInterface $config, private readonly ?AbstractProxyService $proxy = null)
     {
@@ -64,20 +61,9 @@ class RpcTimeoutResolver
     public function set(float $timeout): ?AbstractProxyService
     {
         self::validate($timeout);
-        $this->timeout = $timeout;
+        Context::set(self::TIMEOUT, $timeout);
 
         return $this->proxy;
-    }
-
-    /**
-     * Take the timeout set by `set()`, it only affects one rpc call.
-     */
-    public function pull(): ?float
-    {
-        $timeout = $this->timeout;
-        $this->timeout = null;
-
-        return $timeout;
     }
 
     public function resolve(string $serviceName, string $method): ?float
@@ -90,30 +76,6 @@ class RpcTimeoutResolver
         $timeout = Context::get(self::TIMEOUT);
 
         return is_float($timeout) ? $timeout : null;
-    }
-
-    /**
-     * @template TReturn
-     * @param Closure(): TReturn $callback
-     * @return TReturn
-     */
-    public static function runWith(float $timeout, Closure $callback): mixed
-    {
-        self::validate($timeout);
-
-        $hasPreviousTimeout = Context::has(self::TIMEOUT);
-        $previousTimeout = self::get();
-        Context::set(self::TIMEOUT, $timeout);
-
-        try {
-            return $callback();
-        } finally {
-            if ($hasPreviousTimeout && $previousTimeout !== null) {
-                Context::set(self::TIMEOUT, $previousTimeout);
-            } else {
-                Context::destroy(self::TIMEOUT);
-            }
-        }
     }
 
     public static function validate(float $timeout, ?string $message = null): void

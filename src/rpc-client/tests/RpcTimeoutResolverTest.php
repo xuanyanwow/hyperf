@@ -20,7 +20,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 /**
  * @internal
@@ -78,32 +77,12 @@ class RpcTimeoutResolverTest extends TestCase
         ];
     }
 
-    public function testTimeoutIsScopedAndRestored()
+    public function testSetWritesTheTimeoutIntoContext()
     {
-        $result = RpcTimeoutResolver::runWith(5, function () {
-            $result = RpcTimeoutResolver::runWith(10, function () {
-                $this->assertSame(10.0, RpcTimeoutResolver::get());
+        $resolver = new RpcTimeoutResolver($this->createConfig([]));
 
-                return 'result';
-            });
-
-            $this->assertSame(5.0, RpcTimeoutResolver::get());
-
-            return $result;
-        });
-
-        $this->assertSame('result', $result);
-        $this->assertNull(RpcTimeoutResolver::get());
-    }
-
-    public function testTimeoutIsClearedAfterAnException()
-    {
-        try {
-            RpcTimeoutResolver::runWith(10, static fn () => throw new RuntimeException('failed'));
-        } catch (RuntimeException) {
-        }
-
-        $this->assertNull(RpcTimeoutResolver::get());
+        $this->assertNull($resolver->set(10));
+        $this->assertSame(10.0, RpcTimeoutResolver::get());
     }
 
     #[DataProvider('invalidRuntimeTimeoutProvider')]

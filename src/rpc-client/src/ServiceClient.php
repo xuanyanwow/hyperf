@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Hyperf\RpcClient;
 
 use Hyperf\Collection\Arr;
+use Hyperf\Context\Context;
 use Hyperf\Contract\IdGeneratorInterface;
 use Hyperf\Contract\NormalizerInterface;
 use Hyperf\Di\MethodDefinitionCollectorInterface;
@@ -84,16 +85,18 @@ class ServiceClient extends AbstractServiceClient
     public function __call(string $method, array $params)
     {
         $resolver = $this->getTimeoutResolver();
-        $timeout = $resolver->pull() ?? $resolver->resolve($this->serviceName, $method);
-
-        if ($timeout === null) {
-            return $this->__request($method, $params);
+        if (RpcTimeoutResolver::get() === null) {
+            $timeout = $resolver->resolve($this->serviceName, $method);
+            if ($timeout !== null) {
+                $resolver->set($timeout);
+            }
         }
 
-        return RpcTimeoutResolver::runWith(
-            $timeout,
-            fn () => $this->__request($method, $params)
-        );
+        try {
+            return $this->__request($method, $params);
+        } finally {
+            Context::destroy(RpcTimeoutResolver::TIMEOUT);
+        }
     }
 
     protected function getTimeoutResolver(): RpcTimeoutResolver
