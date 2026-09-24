@@ -32,7 +32,7 @@ class SocketTimeoutTest extends AbstractTestCase
         parent::tearDown();
     }
 
-    public function testUsesTheActiveRequestTimeoutWhileWaitingForAMultiplexResponse()
+    public function testForwardsTheContextTimeoutToTheUnderlyingClient()
     {
         $container = ContainerStub::mockContainer();
 
@@ -43,6 +43,26 @@ class SocketTimeoutTest extends AbstractTestCase
         };
         $socket->getChannelManager()->get(1, true);
         RpcTimeoutResolver::set(0.01);
+
+        try {
+            $socket->recv(1);
+            $this->fail('Expected RecvTimeoutException was not thrown.');
+        } catch (RecvTimeoutException $exception) {
+            $this->assertStringContainsString('0.01', $exception->getMessage());
+        }
+    }
+
+    public function testKeepsTheConfiguredTimeoutWhenContextIsEmpty()
+    {
+        $container = ContainerStub::mockContainer();
+
+        $socket = new class($container) extends Socket {
+            protected function loop(): void
+            {
+            }
+        };
+        $socket->set(['recv_timeout' => 0.01]);
+        $socket->getChannelManager()->get(1, true);
 
         try {
             $socket->recv(1);
